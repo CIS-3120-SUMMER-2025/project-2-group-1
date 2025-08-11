@@ -3,17 +3,28 @@ import requests
 from bs4 import BeautifulSoup
 
 #Setting the URLs for the teams 
-urls_list=[
-    'https://bmccathletics.com/sports/womens-volleyball/roster?view=2','https://yorkathletics.com/sports/womens-volleyball/roster',
-    'https://hostosathletics.com/sports/womens-volleyball/roster?view=2','https://bronxbroncos.com/sports/womens-volleyball/roster/2021?view=2',
-    'https://queensknights.com/sports/womens-volleyball/roster?view=2','https://augustajags.com/sports/wvball/roster',
-    'https://flaglerathletics.com/sports/womens-volleyball/roster?view=2','https://pacersports.com/sports/womens-volleyball/roster',
-    'https://www.lockhavenathletics.com/sports/womens-volleyball/roster',
-    'https://ccnyathletics.com/sports/mens-volleyball/roster?view=2','https://lehmanathletics.com/sports/mens-volleyball/roster?view=2','https://www.brooklyncollegeathletics.com/sports/mens-volleyball/roster?view=2',
-    'https://johnjayathletics.com/sports/mens-volleyball/roster?view=2','https://athletics.baruch.cuny.edu/sports/mens-volleyball/roster?view=2','https://mecathletics.com/sports/mens-volleyball/roster?view=2','https://www.huntercollegeathletics.com/sports/mens-volleyball/roster','https://yorkathletics.com/sports/mens-volleyball/roster',
-    'https://ballstatesports.com/sports/mens-volleyball/roster'
-    
-]
+# Setting the URLs for the teams
+#1-4
+sports_dict={
+    'volleyball_mens':[
+        'https://ccnyathletics.com/sports/mens-volleyball/roster?view=2','https://lehmanathletics.com/sports/mens-volleyball/roster?view=2','https://www.brooklyncollegeathletics.com/sports/mens-volleyball/roster?view=2',
+        'https://johnjayathletics.com/sports/mens-volleyball/roster?view=2','https://athletics.baruch.cuny.edu/sports/mens-volleyball/roster?view=2',
+        'https://mecathletics.com/sports/mens-volleyball/roster?view=2','https://www.huntercollegeathletics.com/sports/mens-volleyball/roster?view=2',
+        'https://yorkathletics.com/sports/mens-volleyball/roster',
+        'https://ballstatesports.com/sports/mens-volleyball/roster'
+        ],
+        'volleyball_womens':[
+          'https://bmccathletics.com/sports/womens-volleyball/roster?view=2',
+          'https://yorkathletics.com/sports/womens-volleyball/roster',
+          'https://hostosathletics.com/sports/womens-volleyball/roster?view=2',
+          'https://bronxbroncos.com/sports/womens-volleyball/roster/2021?view=2',
+          'https://queensknights.com/sports/womens-volleyball/roster?view=2',
+          'https://augustajags.com/sports/wvball/roster?view=2',
+          'https://flaglerathletics.com/sports/womens-volleyball/roster?view=2',
+          'https://pacersports.com/sports/womens-volleyball/roster',
+          'https://www.lockhavenathletics.com/sports/womens-volleyball/roster'
+        ]
+}
 
 
 
@@ -27,7 +38,7 @@ headers = {
   }
 
 # make a request to the server
-page= requests.get(urls_list, headers=headers, verify=False)
+page= requests.get(sports_dict, headers=headers, verify=False)
 
 print(page.status_code)
 
