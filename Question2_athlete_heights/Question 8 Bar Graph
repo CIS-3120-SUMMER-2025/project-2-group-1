@@ -1,0 +1,24 @@
+import matplotlib.pyplot as plt
+
+avg_heights = {
+    "Men's Swimming": avg_ms,
+    "Men's Volleyball": avg_mvb,
+    "Women's Swimming": avg_wsw,
+    "Women's Volleyball": avg_wvb
+}
+
+avg_heights_cm = {k: v * 2.54 for k, v in avg_heights.items() if pd.notna(v)}
+
+plt.figure(figsize=(8, 6))
+plt.bar(avg_heights_cm.keys(), avg_heights_cm.values(), color=["blue", "orange", "green", "red"])
+plt.ylabel("Average Height (cm)")
+plt.title("Average Height by Sport Category")
+plt.ylim(0, max(avg_heights_cm.values()) + 10)
+
+
+for sport, height in avg_heights_cm.items():
+    plt.text(sport, height + 0.5, f"{height:.1f}", ha="center", fontsize=10)
+
+plt.tight_layout()
+plt.savefig("avg_height_distribution.png", dpi=300)
+plt.show()
