@@ -1,6 +1,7 @@
 # Importing Libraries
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 
 #Setting the URLs for the teams 
 # Setting the URLs for the teams
@@ -47,3 +48,32 @@ print(page.content)
 # import raw html into beautifulsoup
 soup=BeautifulSoup(page.content,'html.parser')
 print(soup.prettify())
+
+# this is number 6
+# the shortest and tallest
+
+def tallest_and_shortest(sports_df,sport_name):
+  # sorting ascending for shortest
+  sports_df_sort_asc=sports_df.sort_values('Heights', ascending=True)
+  # shortest_cutoff=sports_df_sort_asc[0:6]['Heights']
+  shortest_cutoff=sports_df_sort_asc.iloc[4]['Heights']
+  shortest_persons=sports_df_sort_asc[sports_df_sort_asc['Heights']<=shortest_cutoff]
+
+# Sort descending for tallest
+  sports_df_sort_desc = sports_df.sort_values('Heights', ascending=False)
+  tallest_cutoff = sports_df_sort_desc.iloc[4]['Heights']  # 5th tallest height
+  tallest_persons = sports_df_sort_desc[sports_df_sort_desc['Heights'] >= tallest_cutoff]
+
+  print(f"\n{sport_name} - Shortest athletes :")
+  for index, row in shortest_persons.iterrows():
+        print(row['Names'], "-", row['Heights'], "inches")
+
+  print(f"\n{sport_name} - Tallest athletes:")
+  for index, row in tallest_persons.iterrows():
+        print(row['Names'], "-", row['Heights'], "inches")
+
+sports = list(sports_dict.keys())
+for sport in sports:
+    filename = sport + "_data.csv"
+    df = pd.read_csv(filename)
+    tallest_and_shortest(df, sport)
