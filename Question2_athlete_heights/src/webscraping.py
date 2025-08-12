@@ -2,7 +2,7 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-
+import sqlite3
 #Setting the URLs for the teams 
 # Setting the URLs for the teams
 #1-4
@@ -77,3 +77,18 @@ for sport in sports:
     filename = sport + "_data.csv"
     df = pd.read_csv(filename)
     tallest_and_shortest(df, sport)
+
+
+# question #9 sql connection
+# Connect to a new SQLite database (or existing one)
+db_conn = sqlite3.connect('sports_data.db')
+
+# 2. Save DataFrame to SQL table
+df.to_sql('sports_table', db_conn, if_exists='replace', index=False)
+
+# 3. (Optional) Read back the data to check
+check_df = pd.read_sql('SELECT * FROM sports_table', db_conn)
+print(check_df)
+
+# 4. Close the connection
+db_conn.close()
