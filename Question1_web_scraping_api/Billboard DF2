@@ -61,3 +61,25 @@ df2 = pd.DataFrame(records, columns=[
 ])
 df2.to_csv(OUT_PATH, index=False)
 print(df2.shape, "saved to", OUT_PATH)
+
+import sqlite3
+
+# Merge DF1 and DF2
+df3 = pd.merge(df1, df2, on=["Song", "Artist"], how="inner")
+
+# Print merged dataframe
+print("\nMerged DataFrame (DF3):")
+print(df3.head())
+
+# Descriptive statistics
+print("\nDescriptive statistics:")
+print(df3.describe(include="all"))
+df3.to_csv("df3_combined.csv", index=False)
+
+# Import DF3 into SQL database
+conn = sqlite3.connect("songs.db")
+df3.to_sql("df3_table", conn, if_exists="replace", index=False)
+conn.commit()
+conn.close()
+
+print("\nDF3 successfully saved to SQL database 'songs.db' in table 'df3_table'")
