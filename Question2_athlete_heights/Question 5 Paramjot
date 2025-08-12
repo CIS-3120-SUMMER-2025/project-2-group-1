@@ -1,120 +1,52 @@
-import re
-import pandas as pd
+import re, time, pandas as pd, requests
+from io import StringIO
 
-MENS_SWIM = {
-    "College of Staten Island": "https://csidolphins.com/sports/mens-swimming-and-diving/roster",
-    "York College": "https://yorkathletics.com/sports/mens-swimming-and-diving/roster",
-    "Baruch College": "https://athletics.baruch.cuny.edu/sports/mens-swimming-and-diving/roster",
-    "Brooklyn College": "https://www.brooklyncollegeathletics.com/sports/mens-swimming-and-diving/roster",
-    "Lindenwood University": "https://lindenwoodlions.com/sports/mens-swimming-and-diving/roster",
-    "Mckendree University": "https://mckbearcats.com/sports/mens-swimming-and-diving/roster",
-    "Ramapo College": "https://ramapoathletics.com/sports/mens-swimming-and-diving/roster",
-    "SUNY Oneota": "https://oneontaathletics.com/sports/mens-swimming-and-diving/roster",
-    "SUNY Binghamton": "https://bubearcats.com/sports/mens-swimming-and-diving/roster/2021-22",
-    "Albright College": "https://albrightathletics.com/sports/mens-swimming-and-diving/roster/2021-22",
-}
+FILES = [
+    ("womens_swimming.csv",   "Women's Swimming With Heights"),
+    ("mens_swimming.csv",     "Men's Swimming With Heights"),
+    ("mens_volleyball.csv",   "Men's Volleyball With Heights"),
+    ("womens_volleyball.csv", "Women's Volleyball With Heights"),
+]
 
-MENS_VB = {
-    "City College of New York": "https://ccnyathletics.com/sports/mens-volleyball/roster",
-    "Lehman College": "https://lehmanathletics.com/sports/mens-volleyball/roster",
-    "Brooklyn College": "https://www.brooklyncollegeathletics.com/sports/mens-volleyball/roster",
-    "John Jay College": "https://johnjayathletics.com/sports/mens-volleyball/roster",
-    "Baruch College": "https://athletics.baruch.cuny.edu/sports/mens-volleyball/roster",
-    "Medgar Evers College": "https://mecathletics.com/sports/mens-volleyball/roster",
-    "Hunter College": "https://www.huntercollegeathletics.com/sports/mens-volleyball/roster",
-    "York College": "https://yorkathletics.com/sports/mens-volleyball/roster",
-    "Ball State": "https://ballstatesports.com/sports/mens-volleyball/roster",
-}
+UA = {"User-Agent":"Mozilla/5.0"}
+PAUSE = 1.0
 
-WOMENS_VB = {
-    "BMCC": "https://bmccathletics.com/sports/womens-volleyball/roster",
-    "York College": "https://yorkathletics.com/sports/womens-volleyball/roster",
-    "Hostos CC": "https://hostosathletics.com/sports/womens-volleyball/roster",
-    "Bronx CC": "https://bronxbroncos.com/sports/womens-volleyball/roster/2021",
-    "Queens College": "https://queensknights.com/sports/womens-volleyball/roster",
-    "Augusta College": "https://augustajags.com/sports/wvball/roster",
-    "Flagler College": "https://flaglerathletics.com/sports/womens-volleyball/roster",
-    "USC Aiken": "https://pacersports.com/sports/womens-volleyball/roster",
-    "Penn State - Lock Haven": "https://www.golhu.com/sports/womens-volleyball/roster",
-}
+def to_inches(s):
+    if pd.isna(s): return pd.NA
+    s = str(s).strip().replace("’","'").replace("″",'"').replace("–","-").replace("—","-")
+    m = re.match(r"^\s*(\d+(?:\.\d+)?)\s*cm\s*$", s, re.I)
+    if m: return float(m.group(1))/2.54
+    if re.match(r"^\d+(\.\d+)?$", s): 
+        v = float(s); return v/2.54 if v>=100 else v
+    m = re.match(r"^\s*(\d+)\s*['-]?\s*(\d+)\s*(\"|in|$)", s, re.I)
+    if m: return float(m.group(1))*12 + float(m.group(2))
+    m = re.match(r"^\s*(\d+)\s*(?:ft|feet)\s*(\d+)\s*(?:in|inches)\s*$", s, re.I)
+    if m: return float(m.group(1))*12 + float(m.group(2))
+    return pd.NA
 
-WOMENS_SWIM = {
-    "College of Staten Island": "https://csidolphins.com/sports/womens-swimming-and-diving/roster",
-    "Queens College": "https://queensknights.com/sports/womens-swimming-and-diving/roster",
-    "York College": "https://yorkathletics.com/sports/womens-swimming-and-diving/roster",
-    "Baruch College": "https://athletics.baruch.cuny.edu/sports/womens-swimming-and-diving/roster/2021-22?path=wswim",
-    "Brooklyn College": "https://www.brooklyncollegeathletics.com/sports/womens-swimming-and-diving/roster",
-    "Lindenwood University": "https://lindenwoodlions.com/sports/womens-swimming-and-diving/roster",
-    "Mckendree University": "https://mckbearcats.com/sports/womens-swimming-and-diving/roster",
-    "Ramapo College": "https://ramapoathletics.com/sports/womens-swimming-and-diving/roster",
-    "Kean University": "https://keanathletics.com/sports/womens-swimming-and-diving/roster",
-    "SUNY Oneota": "https://oneontaathletics.com/sports/womens-swimming-and-diving/roster",
-}
-
-
-def scrape_group(url_dict):
-    rows = []
-    for school, url in url_dict.items():
+def avg_from_roster_list(csv_path):
+    """Reads School/Roster CSV, visits each roster page, grabs a table that has Height (or Ht)."""
+    base = pd.read_csv(csv_path)
+    all_in = []
+    for url in base["Roster"]:
         try:
-            html = fetch(url)
-            data = detect_and_parse(html) 
-            for r in data:
-                r["school"] = school
-                r["source_url"] = url
-            print(f"{school}: {len(data)} players captured")
-            rows.extend(data)
-        except Exception as e:
-            print(f"{school}: ERROR -> {e}")
-    return pd.DataFrame(rows, columns=["school", "name", "height", "source_url"])
+            html = requests.get(url, headers=UA, timeout=20).text
+          
+            for t in pd.read_html(StringIO(html)):
+                hcols = [c for c in t.columns if ("height" in str(c).lower()) or str(c).lower() in ("ht","ht.")]
+                if not hcols: 
+                    continue
+                h = pd.to_numeric(t[hcols[0]].map(to_inches), errors="coerce")
+                h = h[h.between(55,85)]
+                if len(h):
+                    all_in.extend(h.tolist())
+                    break
+            time.sleep(PAUSE)
+        except Exception:
+            pass
+    return (round(pd.Series(all_in).mean(),2), len(all_in)) if all_in else (None,0)
 
-
-def height_to_inches(h):
-    if pd.isna(h): return None
-    s = str(h).lower().strip()
-    m = re.match(r"(\d+)\s*cm", s)
-    if m:
-        return float(m.group(1)) / 2.54
-    m = re.match(r"(\d)[-'\s]+(\d{1,2})", s)  
-    if m:
-        return int(m.group(1)) * 12 + int(m.group(2))
-    m = re.match(r"(\d)['’]?$", s)           
-    if m:
-        return int(m.group(1)) * 12
-    return None
-
-def add_numeric_height(df):
-    df = df.copy()
-    df["height_in"] = df["height"].apply(height_to_inches)
-    return df
-
-df_ms = add_numeric_height(scrape_group(MENS_SWIM))
-df_mvb = add_numeric_height(scrape_group(MENS_VB))
-df_wvb = add_numeric_height(scrape_group(WOMENS_VB))
-df_wsw = add_numeric_height(scrape_group(WOMENS_SWIM))
-
-df_ms.to_csv("mens_swim_heights.csv", index=False)
-df_mvb.to_csv("mens_volleyball_heights.csv", index=False)
-df_wvb.to_csv("womens_volleyball_heights.csv", index=False)
-df_wsw.to_csv("womens_swim_heights.csv", index=False)
-
-
-avg_ms  = df_ms["height_in"].mean()
-avg_mvb = df_mvb["height_in"].mean()
-avg_wvb = df_wvb["height_in"].mean()
-avg_wsw = df_wsw["height_in"].mean()
-
-print("\nAverages (inches):")
-print(f"Men's Swimming:         {avg_ms:.2f}")
-print(f"Men's Volleyball:       {avg_mvb:.2f}")
-print(f"Women's Volleyball:     {avg_wvb:.2f}")
-print(f"Women's Swimming:       {avg_wsw:.2f}")
-
-print("\nAverages (cm):")
-for label, val in [
-    ("Men's Swimming", avg_ms),
-    ("Men's Volleyball", avg_mvb),
-    ("Women's Volleyball", avg_wvb),
-    ("Women's Swimming", avg_wsw),
-]:
-    cm = val * 2.54 if pd.notna(val) else float("nan")
-    print(f"{label}: {cm:.2f}")
+print("Q5 Averages:")
+for src, label in FILES:
+    avg, n = avg_from_roster_list(src)
+    print(f"{label}: average in = {avg} (n={n})") 
