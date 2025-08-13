@@ -13,7 +13,7 @@ https://github.com/CIS-3120-SUMMER-2025/project-2-group-1
 - Run the program: 
   python3 main.py
 #Step 3:
-The program will: Scrape data from each team’s roster web page Save the data into individual CSV files, a merged CSV, and an SQLite database file Output average heights and tallest/shortest players by sport
+The program will: Scrape a Billboard chart table and store it in a CSV file; use song titles or artist names to query an API and collect additional information; store the API data in a separate dataframe; merge the two dataframes into a combined dataset and export it to CSV. Additionally, the program will scrape data from each team’s roster web page, save the data into individual CSV files, a merged CSV, and an SQLite database file, and output average heights along with the tallest and shortest players by sport.
 
 <!-- each member's contributions -->
 Loverta Brown: Generated the folders and webscrapingpy files for each question, did the scraping for the billboard and did DF1, did questions 3, 4, 6, and 9 in Question 2.
