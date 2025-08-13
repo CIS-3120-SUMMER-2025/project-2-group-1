@@ -1,52 +1,69 @@
-import re, time, pandas as pd, requests
-from io import StringIO
+def to_inches(s):
+    if pd.isna(s):
+        return None
+    s = str(s).strip().replace('’', "'").replace('″', '"').replace('–', '-').replace('—', '-')
 
-FILES = [
-    ("womens_swimming.csv",   "Women's Swimming With Heights"),
-    ("mens_swimming.csv",     "Men's Swimming With Heights"),
-    ("mens_volleyball.csv",   "Men's Volleyball With Heights"),
-    ("womens_volleyball.csv", "Women's Volleyball With Heights"),
+    # Try to parse format like 6-2 or 6'2"
+    if '-' in s:
+        parts = s.split('-')
+        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+            feet = int(parts[0])
+            inches = int(parts[1])
+            return feet * 12 + inches
+
+    if "'" in s:
+        parts = s.split("'")
+        if len(parts) == 2:
+            feet = parts[0].strip()
+            inches = parts[1].replace('"', '').strip()
+            if feet.isdigit() and inches.isdigit():
+                return int(feet) * 12 + int(inches)
+
+    # Check for cm (e.g. 180 cm or 180cm)
+    s_lower = s.lower().replace(' ', '')
+    if s_lower.endswith("cm"):
+        number_part = s_lower[:-2]
+        try:
+            cm = float(number_part)
+            return cm / 2.54
+        except:
+            return None
+
+    # Try to convert directly to number (inches or cm)
+    try:
+        val = float(s)
+        if val > 100:  # assume cm
+            return val / 2.54
+        else:
+            return val
+    except:
+        return None
+
+def average_height_from_csv(path):
+    df = pd.read_csv(path)
+    height_col = None
+    for col in df.columns:
+        if "height" in col.lower() or col.lower() in ['ht', 'ht.']:
+            height_col = col
+            break
+    if not height_col:
+        return None
+
+    heights_in = df[height_col].map(to_inches)
+    valid_heights = heights_in[(heights_in >= 55) & (heights_in <= 85)]
+    if valid_heights.empty:
+        return None
+    return round(valid_heights.mean(), 2)
+
+files = [
+    ("Men's Swimming",     "mens_swimming.csv"),
+    ("Men's Volleyball",   "mens_volleyball.csv"),
+    ("Women's Swimming",   "womens_swimming.csv"),
+    ("Women's Volleyball", "womens_volleyball.csv"),
 ]
 
-UA = {"User-Agent":"Mozilla/5.0"}
-PAUSE = 1.0
-
-def to_inches(s):
-    if pd.isna(s): return pd.NA
-    s = str(s).strip().replace("’","'").replace("″",'"').replace("–","-").replace("—","-")
-    m = re.match(r"^\s*(\d+(?:\.\d+)?)\s*cm\s*$", s, re.I)
-    if m: return float(m.group(1))/2.54
-    if re.match(r"^\d+(\.\d+)?$", s): 
-        v = float(s); return v/2.54 if v>=100 else v
-    m = re.match(r"^\s*(\d+)\s*['-]?\s*(\d+)\s*(\"|in|$)", s, re.I)
-    if m: return float(m.group(1))*12 + float(m.group(2))
-    m = re.match(r"^\s*(\d+)\s*(?:ft|feet)\s*(\d+)\s*(?:in|inches)\s*$", s, re.I)
-    if m: return float(m.group(1))*12 + float(m.group(2))
-    return pd.NA
-
-def avg_from_roster_list(csv_path):
-    """Reads School/Roster CSV, visits each roster page, grabs a table that has Height (or Ht)."""
-    base = pd.read_csv(csv_path)
-    all_in = []
-    for url in base["Roster"]:
-        try:
-            html = requests.get(url, headers=UA, timeout=20).text
-          
-            for t in pd.read_html(StringIO(html)):
-                hcols = [c for c in t.columns if ("height" in str(c).lower()) or str(c).lower() in ("ht","ht.")]
-                if not hcols: 
-                    continue
-                h = pd.to_numeric(t[hcols[0]].map(to_inches), errors="coerce")
-                h = h[h.between(55,85)]
-                if len(h):
-                    all_in.extend(h.tolist())
-                    break
-            time.sleep(PAUSE)
-        except Exception:
-            pass
-    return (round(pd.Series(all_in).mean(),2), len(all_in)) if all_in else (None,0)
-
-print("Q5 Averages:")
-for src, label in FILES:
-    avg, n = avg_from_roster_list(src)
-    print(f"{label}: average in = {avg} (n={n})") 
+print("Average Heights (inches):")
+print("-------------------------")
+for label, filepath in files:
+    avg = average_height_from_csv(filepath)
+    print(f"{label}: {avg if avg else 'No data'}")
