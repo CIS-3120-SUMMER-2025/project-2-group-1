@@ -20,5 +20,5 @@ Scrape a Billboard chart table and store it in a CSV file; use song titles or ar
 
 <!-- each member's contributions -->
 Loverta Brown: Generated the folders and webscrapingpy files for each question, did the scraping for the billboard and did DF1, did questions 3, 4, 6, and 9 in Question 2.
-Nicole Ng: Did DF3, merged and printed data, and imported it into a SQL database. Did questions 2 and 7 in Question 1, as well as debugging any errors in the code for all question parts of Question 2, then merged it all into one single coding file.
+Nicole Ng: Did DF3, merged and printed data, and imported it into a SQL database. Did questions 2 and 7 in Question 2, as well as debugging the errors in the code for all question parts of Question 2, then merged it all into one single coding file.
 Paramjot Singh: Did DF2 with api integration and made the api request per record. Did questions 1, 5, and 8 of Question 2, as well as debugging any errors.
